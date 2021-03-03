@@ -6,6 +6,7 @@
 
 #### Build
 ```sh
+apt install gcc-arm-linux-gnueabihf
 pip3 install pyelftools
 make all
 ```

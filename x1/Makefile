@@ -1,4 +1,4 @@
-CROSS_COMPILE:=arm-linux-gnueabi-
+CROSS_COMPILE:=arm-linux-gnueabihf-
 AS:=$(CROSS_COMPILE)as
 
 .PHONY:
