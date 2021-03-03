@@ -19,9 +19,11 @@ def extract(elf):
         print('Input ELF has no .text section', file=sys.stderr)
 
     with open(sys.argv[2], 'wb') as f:
-        f.write(text.data())
+        elf.stream.seek(0)
+        elf.stream.read(text.header.sh_offset)
+        f.write(elf.stream.read())
 
-    print(f'Successfully extracted the .text section to "{sys.argv[2]}"')
+    print(f'Successfully extracted the necessary sections to "{sys.argv[2]}"')
 
 
 main()
