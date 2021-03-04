@@ -17,6 +17,7 @@ def extract(elf):
     text = elf.get_section_by_name('.text')
     if text is None:
         print('Input ELF has no .text section', file=sys.stderr)
+        sys.exit(1)
 
     with open(sys.argv[2], 'wb') as f:
         elf.stream.seek(0)
