@@ -9,7 +9,7 @@ def main():
         print(f'Usage: {sys.argv[0]} in.elf out.bin')
         sys.exit(1)
 
-    with open(sys.argv[1], 'rb') as f:
+    with open(sys.argv[-2], 'rb') as f:
         extract(ELFFile(f))
 
 
@@ -19,10 +19,14 @@ def extract(elf):
         print('Input ELF has no .text section', file=sys.stderr)
         sys.exit(1)
 
-    with open(sys.argv[2], 'wb') as f:
-        elf.stream.seek(0)
-        elf.stream.read(text.header.sh_offset)
-        f.write(elf.stream.read())
+    with open(sys.argv[-1], 'wb') as f:
+        if '-p' in sys.argv:
+            print(f'Pure .text mode is enabled')
+            f.write(text.data())
+        else:
+            elf.stream.seek(0)
+            elf.stream.read(text.header.sh_offset)
+            f.write(elf.stream.read())
 
     print(f'Successfully extracted the necessary sections to "{sys.argv[2]}"')
 
