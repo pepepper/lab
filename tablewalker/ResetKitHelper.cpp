@@ -109,8 +109,6 @@ extern "C" RESETKITHELPER_API BOOL RKH_IOControl(DWORD handle, DWORD dwIoControl
 		OutputDebugString(buf);
 		for(unsigned int i=0;i<0xffffffff;i+=4096){
 			table0=(unsigned int *)((TTBR0&0xFFFFC000)|((i>>19)<<2));
-			swprintf(buf, L"table0 addr=%#x\r\n", table0);
-			OutputDebugString(buf);
 			asm volatile(
 				"mrc	p15,0,r10,c1,c0,0\n" // read ctrl regs
 				"mov	r9,r10\n"
@@ -118,30 +116,11 @@ extern "C" RESETKITHELPER_API BOOL RKH_IOControl(DWORD handle, DWORD dwIoControl
 				"mcr	p15,0,r10,c1,c0,0\n"// disable MMU
 				"ldr	%0, [%1]\n"
 				"mcr	p15,0,r9,c1,c0,0\n" // enable MMU
-				"nop\n"
-				"nop\n"
-				"nop\n"
-				"nop\n"
-				"nop\n"
-				"nop\n"
-				"nop\n"
-				"nop\n"
-				"nop\n"
-				"nop\n"
-				"nop\n"
-				"nop\n"
-				"nop\n"
-				"nop\n"
-				"nop\n"
 				:"=r" (descriptor): "r" (table0):"r10","r9","r8"
 			);
-			swprintf(buf, L"table0=%#x\r\n", descriptor);
-			OutputDebugString(buf);
 			if((descriptor&0x3)==0)continue; //Invalid
 			else if((descriptor&0x3)==1){ //Page Table
 				table1=(unsigned int *)((descriptor&0xFFFFFC00)|((i&0xFF000)>>9));
-				swprintf(buf, L"table1 addr=%#x\r\n", table1);
-				OutputDebugString(buf);
 				asm volatile(
 					"mrc	p15,0,r10,c1,c0,0\n" // read ctrl regs
 					"mov	r9,r10\n"
@@ -149,31 +128,22 @@ extern "C" RESETKITHELPER_API BOOL RKH_IOControl(DWORD handle, DWORD dwIoControl
 					"mcr	p15,0,r10,c1,c0,0\n"// disable MMU
 					"ldr	%0, [%1]\n"
 					"mcr	p15,0,r9,c1,c0,0\n" // enable MMU
-					"nop\n"
-					"nop\n"
-					"nop\n"
-					"nop\n"
-					"nop\n"
-					"nop\n"
-					"nop\n"
-					"nop\n"
-					"nop\n"
-					"nop\n"
-					"nop\n"
-					"nop\n"
-					"nop\n"
-					"nop\n"
-					"nop\n"
-				: "=r" (table1):"r" (descriptor):"r10","r9","r8"
+				:"=r" (descriptor): "r" (table1):"r10","r9","r8"
 				);
 				if(descriptor&0x3==1){//large page
+					swprintf(buf, L"Virt Addr=%#x : Phys Addr=%#x\r\n",i,(descriptor&0xFFFF0000)|(i&0xFFFF));
+					OutputDebugString(buf);
 					if(((descriptor&0xFFFF0000)|(i&0xFFFF))==0x40000000)ram=i;
 					else if(((descriptor&0xFFFF0000)|(i&0xFFFF0000))==0x80070000)ahp=i;
 				}else{//small page
+					swprintf(buf, L"Virt Addr=%#x : Phys Addr=%#x\r\n",i,(descriptor&0xFFFFF000)|(i&0xFFF));
+					OutputDebugString(buf);
 					if(((descriptor&0xFFFFF000)|(i&0xFFF))==0x40000000)ram=i;
 					else if(((descriptor&0xFFFFF000)|(i&0xFFF))==0x80070000)ahp=i;
 				}
 			}else if((descriptor&0x40000)){ //Section
+				swprintf(buf, L"Virt Addr=%#x : Phys Addr=%#x\r\n",i,(descriptor&0xFFF00000)|(i&0xFFFFF));
+				OutputDebugString(buf);
 				if(((descriptor&0xFFF00000)|(i&0xFFFFF))==0x40000000)ram=i;
 				else if(((descriptor&0xFFF00000)|(i&0xFFFFF))==0x80070000)ahp=i;
 			}else continue; //Supersection
