@@ -7,7 +7,7 @@ all: return.bin mrc.bin c/main.bin
 
 .PHONY:
 clean:
-	@rm -f *.bin spray/*.bin c/*.bin
+	@rm -f *.bin spray/*.bin c/*.bin injector/*.bin injector/*.elf
 
 %.bin: %.S
 	@$(AS) $<
@@ -28,3 +28,14 @@ spray/main.bin:
 	@./extract.py -p a.out spray/bottom_reset.bin
 	@./append_nop.py spray/top.bin spray/bottom.bin spray/bottom_reset.bin spray/main.bin 112 113
 	@rm -f a.out
+
+injector/AppMain.bin:
+	@if [ "$(INJECTED_S)" = "" ]; then \
+		echo "Please specify INJECTED_S."; \
+		exit 1; \
+	fi
+	@$(AS) $(INJECTED_S) -o injector/injected.elf
+	@./extract.py -p injector/injected.elf injector/injected.bin
+	@$(AS) injector/disable_mmu.S -o injector/disable_mmu.elf
+	@./extract.py -p injector/disable_mmu.elf injector/disable_mmu.bin
+	@./injector/inject.py 0xf00000 0x700000 injector/disable_mmu.bin injector/injected.bin injector/AppMain.bin
