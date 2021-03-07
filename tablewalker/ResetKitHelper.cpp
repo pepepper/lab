@@ -78,79 +78,90 @@ void printhex(unsigned int num,unsigned int *addr) {
 	}
 }
 
+unsigned int PhysicalRead(unsigned int addr){
+	unsigned int ret;
+	asm volatile(
+		"mrc	p15,0,r10,c1,c0,0\n" // read ctrl regs
+		"mov	r9,r10\n"
+		"bic	r10, r10, #1\n"
+		"mcr	p15,0,r10,c1,c0,0\n"// disable MMU
+		"ldr	%0, [%1]\n"
+		"mcr	p15,0,r9,c1,c0,0\n" // enable MMU
+		:"=r" (ret): "r" (addr):"r10","r9"
+	);
+	return ret;
+}
+
 extern "C" RESETKITHELPER_API BOOL RKH_IOControl(DWORD handle, DWORD dwIoControlCode, DWORD *pInBuf, DWORD nInBufSize, DWORD *pOutBuf, DWORD nOutBufSize,
 												 PDWORD pBytesReturned){
 	SetLastError(0);
 	switch (dwIoControlCode){
 	case IOCTL_RKH_DO_SOFT_RESET:
-		wchar_t buf[256];
-		unsigned int TTBCR,addrmask,TTBR0,TTBR1,*table0,*table1,ram=0,ahp=0,descriptor;
+		wchar_t buf[256]={0};
+		unsigned int TTBR0,table0,table1,ram=0,ahp=0,descriptor,physaddr,vaddr=0;
 		asm volatile(
-			"msr	cpsr_c, #211\n"	// to supervisor mode
 			"mrs	r0, cpsr\n"
 			"orr	r0,r0,#0x80\n"
 			"msr	cpsr_c,r0\n"	//interrupt disable
-			"mov	r0,#1\n"
-			//"mrc	p15,0,r9,c1,c0,0\n" // read ctrl regs
-			//"bic	r9, r9, #4\n" // disable DCache
-			//"bic	r9, r9, #4096\n" // disable ICache
-			//"mcr	p15,0,r9,c1,c0,0\n" // write ctrl regs
-			//"mov	r9, #0\n"
-			//"mcr	p15,0,r9,c7,c7,0\n" // invalidate cache
-			//"mcr	p15,0,r9,c8,c7,0\n" // invalidate tlb
-			:::"r0"
-		);
-		OutputDebugString(L"stop interrupt\r\n");
-		asm volatile(
-			"mrc p15, 0, %1, c2, c0, 0\n"
-			: "=r" (TTBCR),"=r" (TTBR0),"=r" (TTBR1)
+			"mrc p15, 0, %0, c2, c0, 0\n"
+			:"=r" (TTBR0)::"r0"
 		);
 		swprintf(buf, L"TTBR=%#x\r\n", TTBR0);
 		OutputDebugString(buf);
-		for(unsigned int i=0;i<0xffffffff;i+=4096){
-			table0=(unsigned int *)((TTBR0&0xFFFFC000)|((i>>19)<<2));
-			asm volatile(
-				"mrc	p15,0,r10,c1,c0,0\n" // read ctrl regs
-				"mov	r9,r10\n"
-				"bic	r10, r10, #1\n"
-				"mcr	p15,0,r10,c1,c0,0\n"// disable MMU
-				"ldr	%0, [%1]\n"
-				"mcr	p15,0,r9,c1,c0,0\n" // enable MMU
-				:"=r" (descriptor): "r" (table0):"r10","r9","r8"
-			);
-			if((descriptor&0x3)==0)continue; //Invalid
-			else if((descriptor&0x3)==1){ //Page Table
-				table1=(unsigned int *)((descriptor&0xFFFFFC00)|((i&0xFF000)>>9));
-				asm volatile(
-					"mrc	p15,0,r10,c1,c0,0\n" // read ctrl regs
-					"mov	r9,r10\n"
-					"bic	r10, r10, #1\n"
-					"mcr	p15,0,r10,c1,c0,0\n"// disable MMU
-					"ldr	%0, [%1]\n"
-					"mcr	p15,0,r9,c1,c0,0\n" // enable MMU
-				:"=r" (descriptor): "r" (table1):"r10","r9","r8"
-				);
-				if(descriptor&0x3==1){//large page
-					swprintf(buf, L"Virt Addr=%#x : Phys Addr=%#x\r\n",i,(descriptor&0xFFFF0000)|(i&0xFFFF));
+		do{
+			table0=((TTBR0&0xFFFFC000)|((vaddr&0xFFF00000)>>18));
+			descriptor = PhysicalRead(table0);
+			if((descriptor&0x3)==0) continue; //Fault
+			else if((descriptor&0x3)==1){ //Coarse page table
+				table1=((descriptor&0xFFFFFC00)|((vaddr&0xFF000)>>9));
+				descriptor = PhysicalRead(table1);
+				if((descriptor&0x3)==0) continue;//fault	
+				else if((descriptor&0x3)==1){//large page
+					physaddr=((descriptor&0xFFFF0000)|(vaddr&0xFFFF));
+					swprintf(buf, L"Virt Addr=%#x : Phys Addr=%#x\r\n",vaddr,physaddr);
 					OutputDebugString(buf);
-					if(((descriptor&0xFFFF0000)|(i&0xFFFF))==0x40000000)ram=i;
-					else if(((descriptor&0xFFFF0000)|(i&0xFFFF0000))==0x80070000)ahp=i;
-				}else{//small page
-					swprintf(buf, L"Virt Addr=%#x : Phys Addr=%#x\r\n",i,(descriptor&0xFFFFF000)|(i&0xFFF));
+					if(physaddr==0x40000000)ram=vaddr;
+					else if(physaddr==0x80070000)ahp=vaddr;
+				}else if((descriptor&0x3)==2){//small page
+					physaddr=((descriptor&0xFFFFF000)|(vaddr&0xFFF));
+					swprintf(buf, L"Virt Addr=%#x : Phys Addr=%#x\r\n",vaddr,physaddr);
 					OutputDebugString(buf);
-					if(((descriptor&0xFFFFF000)|(i&0xFFF))==0x40000000)ram=i;
-					else if(((descriptor&0xFFFFF000)|(i&0xFFF))==0x80070000)ahp=i;
+					if(physaddr==0x40000000)ram=vaddr;
+					else if(physaddr==0x80070000)ahp=vaddr;
 				}
-			}else if((descriptor&0x40000)){ //Section
-				swprintf(buf, L"Virt Addr=%#x : Phys Addr=%#x\r\n",i,(descriptor&0xFFF00000)|(i&0xFFFFF));
+			}else if((descriptor&0x3)==2){ //Section
+				physaddr=((descriptor&0xFFF00000)|(vaddr&0xFFFFF));
+				swprintf(buf, L"Virt Addr=%#x : Phys Addr=%#x\r\n",vaddr,physaddr);
 				OutputDebugString(buf);
-				if(((descriptor&0xFFF00000)|(i&0xFFFFF))==0x40000000)ram=i;
-				else if(((descriptor&0xFFF00000)|(i&0xFFFFF))==0x80070000)ahp=i;
-			}else continue; //Supersection
-		}
+				if(physaddr==0x40000000)ram=vaddr;
+				else if(physaddr==0x80070000)ahp=vaddr;
+			}else if((descriptor&0x3)==3){ //Fine page table
+				table1=((descriptor&0xFFFFF000)|((vaddr&0xFC000)>>7));
+				swprintf(buf, L"second level page table=%#x\r\n", table1);
+				OutputDebugString(buf);
+				descriptor = PhysicalRead(table1);
+				swprintf(buf, L"second level page table descriptor=%#x\r\n", descriptor);
+				OutputDebugString(buf);
+				if((descriptor&0x3)==0) continue;//fault
+				else {//tiny page
+					physaddr=((descriptor&0xFFFFFC00)|(vaddr&0x3FF));
+					swprintf(buf, L"Virt Addr=%#x : Phys Addr=%#x\r\n",vaddr,physaddr);
+					OutputDebugString(buf);
+					if(physaddr==0x40000000)ram=vaddr;
+					else if(physaddr==0x80070000)ahp=vaddr;
+				}
+			}
+		}while(vaddr+=0x1000,vaddr<0xffff0000);
 
 		swprintf(buf, L"RAM=%#x\r\nNear UART=%#x\r\n", ram, ahp);
 		OutputDebugString(buf);
+		
+		asm volatile(
+			"mrs	r0, cpsr\n"
+			"bic	r0,r0,#0x80\n"
+			"msr	cpsr_c,r0\n"	//interrupt disable
+			:::"r0"
+		);
 		/*
 		if(ahp){
 			*((unsigned int *)(ahp+0x4000+0x30)) |= 0x101; //UART Tx Enable
@@ -167,7 +178,8 @@ extern "C" RESETKITHELPER_API BOOL RKH_IOControl(DWORD handle, DWORD dwIoControl
 		
 		}
 		*/
-		while(1);
+		return TRUE;
+		
 	}
 	return FALSE;
 }
