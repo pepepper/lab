@@ -1,13 +1,14 @@
 CROSS_COMPILE:=arm-linux-gnueabihf-
 AS:=$(CROSS_COMPILE)as
 CC:=$(CROSS_COMPILE)gcc
+STRIP:=$(CROSS_COMPILE)strip
 
 .PHONY:
 all: return.bin mrc.bin c/main.bin
 
 .PHONY:
 clean:
-	@rm -f *.bin spray/*.bin c/*.bin injector/*.bin injector/*.elf
+	@rm -f *.bin spray/*.bin c/*.bin c/*.elf injector/*.bin injector/*.elf
 
 %.bin: %.S
 	@$(AS) $<
