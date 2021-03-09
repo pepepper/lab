@@ -10,4 +10,4 @@
 
 ### License
 
-CC0 1.0 Universal
+See each directories for licenses. All codes are licensed under CC0 1.0 Universal if not specified.
