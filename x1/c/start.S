@@ -2,6 +2,6 @@
 .global _start
 
 _start:
-    push {r4, lr}
     bl main
-    pop {r4, pc}
+    ldr r0, =0x00000000
+    mov pc, r0
