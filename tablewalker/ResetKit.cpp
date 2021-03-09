@@ -1,8 +1,13 @@
 /*
- * ResetKit
- * Soft/hard reset the electronic dictionary.
+ * Tablewalker
+ * Tablewalker for electric dictionary(except PW-x1).
  * 
- * Copyright (C) 2012 T. Kawada <tcppjp [ at ] gmail.com>
+ * Copyright (C) 2021 C. Shirasaka <holly_programmer@outlook.com>
+ * based on
+ ** ResetKitHelper
+ ** Soft/hard reset the electronic dictionary.
+ ** 
+ ** Copyright (C) 2012 T. Kawada <tcppjp [ at ] gmail.com>
  *
  * This file is licensed in MIT license.
  *
