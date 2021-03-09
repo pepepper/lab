@@ -2,6 +2,7 @@
 
 #define readl(a) (*(volatile unsigned int *)(a))
 #define writel(v, a) (*(volatile unsigned int *)(a) = (v))
+#define writeb(v, a) (*(volatile unsigned char *)(a) = (v))
 
 typedef unsigned int u32;
 typedef unsigned short u16;
