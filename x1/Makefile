@@ -50,3 +50,9 @@ injector/AppMain.bin:
 	@$(AS) injector/disable_mmu.S -o injector/disable_mmu.elf
 	@./extract.py -p injector/disable_mmu.elf injector/disable_mmu.bin
 	@./injector/inject.py 0xf00000 0x700000 injector/disable_mmu.bin injector/injected.bin injector/AppMain.bin
+
+injector/uboot.bin:
+	@$(AS) injector/disable_mmu.S -o injector/disable_mmu.elf
+	@./extract.py -p injector/disable_mmu.elf injector/disable_mmu.bin
+	@./extract.py -p injector/disable_mmu.elf injector/disable_mmu.bin
+	@./injector/inject.py 0xed0000 0x700000 injector/disable_mmu.bin u-boot.bin injector/uboot.bin
