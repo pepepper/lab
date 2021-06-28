@@ -4,40 +4,40 @@
 
 _start:
 //preload U-Boot from sd
-        ldr     r4, .L3
-        adr     r1, [.LC0]
-        adr     r0, [.LC1]
-        mov     r3, r4
-        blx     r3
-        add     r5, r4, #0xc
-        mov     r3, r0
-        ldr     r0, .L3+4
-        mov     r1, #1
-        mov     r2, r0
-        blx     r5
+    ldr     r4, .L3
+    adr     r1, [.LC0]
+    adr     r0, [.LC1]
+    mov     r3, r4
+    blx     r3
+    add     r5, r4, #0xc
+    mov     r3, r0
+    ldr     r0, .L3+4
+    mov     r1, #1
+    mov     r2, r0
+    blx     r5
 
     cpsid if
 
 //copy U-Boot to head of RAM 
-        ldr     r3, =0x37500000
-        ldr     r1, =0x37540000
-.L2:
-        mov     r2, r3
-        sub     r3, r3, #0x7500000
-        ldr     r0, [r2], #4
-        cmp     r2, r1
-        str     r0, [r3]
-        mov     r3, r2
-        bne     .L2
+    ldr     r3, =0x37500000
+    ldr     r1, =0x37540000
+    .L2:
+    mov     r2, r3
+    sub     r3, r3, #0x7500000
+    ldr     r0, [r2], #4
+    cmp     r2, r1
+    str     r0, [r3]
+    mov     r3, r2
+    bne     .L2
 
     ldr r0, =0x60000000
 
 //MUB Interrupt Disable
-ldr r2,=0x40220064
-ldr r3,[r2]
-ldr r1,=0x0000ffff
-and r3,r3,r1
-str r3,[r2]
+    ldr r2,=0x40220064
+    ldr r3,[r2]
+    ldr r1,=0x0000ffff
+    and r3,r3,r1
+    str r3,[r2]
 
     mrc p15, 0, r8, c14, c2, 1
     bic r8, r8, #1
@@ -88,10 +88,10 @@ str r3,[r2]
 
     bx r0
 
-.L3:
-        .word   0x60006400
-        .word   0x37500000
-.LC0:
-        .ascii  "r\000"
-.LC1:
-        .ascii  "SD0:\\u-boot.bin\000"
+    .L3:
+    .word   0x60006400
+    .word   0x37500000
+    .LC0:
+    .ascii  "r\000"
+    .LC1:
+    .ascii  "SD0:\\u-boot.bin\000"
