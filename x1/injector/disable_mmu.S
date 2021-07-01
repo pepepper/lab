@@ -4,31 +4,38 @@
 
 _start:
 //preload U-Boot from sd
-    ldr     r4, .L3
-    adr     r1, [.LC0]
-    adr     r0, [.LC1]
-    mov     r3, r4
-    blx     r3
-    add     r5, r4, #0xc
-    mov     r3, r0
-    ldr     r0, .L3+4
-    mov     r1, #1
-    mov     r2, r0
-    blx     r5
+    ldr r4, =0x60006400
+    adr r1, [.LC0]
+    adr r0, [.LC1]
+    mov r3, r4
+    blx r3
+    add r5, r4, #0xc
+    mov r3, r0
+    ldr r0, =0x37500000
+    mov r1, #1
+    mov r2, r0
+    blx r5
+    bl continue
 
+    .LC0:
+    .ascii  "r\000"
+    .LC1:
+    .ascii  "SD0:\\u-boot.bin\000"
+.align 4
+    continue:
     cpsid if
 
 //copy U-Boot to head of RAM 
-    ldr     r3, =0x37500000
-    ldr     r1, =0x37540000
+    ldr r3, =0x37500000
+    ldr r1, =0x37540000
     .L2:
-    mov     r2, r3
-    sub     r3, r3, #0x7500000
-    ldr     r0, [r2], #4
-    cmp     r2, r1
-    str     r0, [r3]
-    mov     r3, r2
-    bne     .L2
+    mov r2, r3
+    sub r3, r3, #0x7500000
+    ldr r0, [r2], #4
+    cmp r2, r1
+    str r0, [r3]
+    mov r3, r2
+    bne .L2
 
     ldr r0, =0x60000000
 
@@ -38,6 +45,55 @@ _start:
     ldr r1,=0x0000ffff
     and r3,r3,r1
     str r3,[r2]
+
+//A7 GIC external interrupt clear
+    MRC p15,4,r2,c15,c0,0
+    ldr r3,=0
+    str r3,[r2,#0x104] //ICCPMR
+    add r2,r2,#0x1000
+    ldr r3,[r2,#0x4] //ICDICTR 
+    and r3,r3,#0x1f //ITLinesNumber
+    lsl r3,r3,#2
+    add r5,r2,r3 //max
+    ldr r4,=0xffffffff
+    gic_loop:
+    cmp r5,r2
+    str r4,[r2,#0x180] //ICDICER
+    str r4,[r2,#0x280] //ICDICPR
+    str r4,[r2,#0x400] //ICDIPR
+    add r2,r2,#4
+    bne gic_loop
+
+//stop DMA
+    ldr r2,=0x40080000 //DMA1
+    ldr r3,=0x41008000 //DMA0
+    ldr r4,=0x80020000
+    str r4,[r2]
+    str r4,[r3]
+
+//M4 Interrupt Vector Override
+    ldrh r2,=0xbf30
+    ldr r3,=0x1ffd0020
+    strh r2,[r3]
+    ldrh r2,=0xe7fe
+    strh r2,[r3,#2]
+    orr r3,#1
+    ldr r2,=0x1ffd2200
+    ldr r4,=0x1ffd2438
+ivt_loop:
+    cmp r2,r4
+    str r3,[r2],#4
+    beq ivt_loop
+
+//RAM clear
+    ldr r2,=0x60200000
+    ldr r3,=0x68000000
+    sub r3,r3,#4
+    ldr r1,=0
+    clear_loop:
+    cmp r2,r3
+    str r1,[r2],#4
+    beq clear_loop
 
     mrc p15, 0, r8, c14, c2, 1
     bic r8, r8, #1
@@ -88,10 +144,3 @@ _start:
 
     bx r0
 
-    .L3:
-    .word   0x60006400
-    .word   0x37500000
-    .LC0:
-    .ascii  "r\000"
-    .LC1:
-    .ascii  "SD0:\\u-boot.bin\000"
