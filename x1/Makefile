@@ -27,7 +27,7 @@ spray/main.bin:
 	@./extract.py -p a.out spray/bottom.bin
 	@$(AS) spray/bottom_reset.S
 	@./extract.py -p a.out spray/bottom_reset.bin
-	@./append_nop.py spray/top.bin spray/bottom.bin spray/bottom_reset.bin spray/main.bin 112 113
+	@./spray/append_nop.py spray/top.bin spray/bottom.bin spray/bottom_reset.bin spray/main.bin 112 113
 	@rm -f a.out
 
 injector/AppMain.bin:
