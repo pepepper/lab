@@ -21,15 +21,6 @@ c/main.elf:
 c/main.bin: c/main.elf
 	@./extract.py c/main.elf $@
 
-c/uboot_loader.bin:
-	@if [ "$(UBOOT)" = "" ]; then \
-		echo "Please specify UBOOT."; \
-		exit 1; \
-	fi
-	@c/generate.py $(UBOOT) c/uboot_bin.h.tpl c/uboot_bin.h
-	@$(CC) -nostdlib -static -fPIC -marm -O0 c/start.S c/main_uboot.c -o c/uboot_loader.elf
-	@./extract.py c/uboot_loader.elf $@
-
 spray/main.bin:
 	@$(AS) spray/top.S
 	@./extract.py -p a.out spray/top.bin
