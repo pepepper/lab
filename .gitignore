@@ -255,4 +255,6 @@ dmypy.json
 
 *.bin
 *.elf
+*.a
+*.o
 /*/tmp

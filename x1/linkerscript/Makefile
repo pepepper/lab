@@ -7,8 +7,10 @@ OBJCOPY := $(CROSS_COMPILE)objcopy
 TARGET := AppMain
 OBJS := crt0.o main.o
 
+LIBS := libbrain/libbrain.a
+
 ASFLAGS := -W
-CFLAGS := -Wall -ffreestanding -fomit-frame-pointer -Os
+CFLAGS := -Wall -ffreestanding -fomit-frame-pointer -Os -Ilibbrain
 LDFLAGS := -T x1.ld
 
 .PHONY:
@@ -25,7 +27,7 @@ clean:
 	$(CC) -c $(CFLAGS) $<
 
 $(TARGET).elf: $(OBJS)
-	$(LD) $(LDFLAGS) $^ -o $@
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 $(TARGET).bin: $(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
