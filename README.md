@@ -7,6 +7,7 @@
  - [read_keys_SH3.c](read_keys_SH3.c) Scan key matrix and return key name rewritten with C. nice performance
  - [x1](x1) Executable to analyze `[JHSBA]1` gen
  - [lcdbench](lcdbench) Benchmark fb0 fill and show results
+ - [tmemo_converter](tmemo_converter) Converts 手書き暗記メモ into PNGs (2G or older)
 
 
 ### License
