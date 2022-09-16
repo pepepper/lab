@@ -258,3 +258,5 @@ dmypy.json
 *.a
 *.o
 /*/tmp
+
+.DS_Store
